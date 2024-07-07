@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -69,33 +70,58 @@ func (this *User) SendMsg(msg string) {
 // Do indicated tasks
 func (this *User) HandleMsg(msg string) {
 	switch {
-		case msg == "?":	// query current OnlineMap
-			this.server.mapLock.Lock()
-			for _, user := range this.server.OnlineMap {
-				infoMsg := "[" + user.Addr + "]" + user.Name + ":" + " is online...\n"
-				this.SendMsg(infoMsg)
-			}
-			this.server.mapLock.Unlock()
-		case len(msg) > 3 && msg[:3] == "-r ":
-			// newName := strings.Split(msg, '|')[1]
-			newName := msg[3:]
+	case msg == "?":	// query current OnlineMap
+		this.server.mapLock.Lock()
+		for _, user := range this.server.OnlineMap {
+			infoMsg := "[" + user.Addr + "]" + user.Name + ":" + " is online...\n"
+			this.SendMsg(infoMsg)
+		}
+		this.server.mapLock.Unlock()
+	case len(msg) > 3 && msg[:3] == "-r ":
+		// newName := strings.Split(msg, '|')[1]
+		newName := msg[3:]
 
-			_, exist := this.server.OnlineMap[newName]
-			if exist {
-				this.SendMsg("Rename Failed: Current user name is existed!\n")
-			} else {
-				// Update OnlineMap on Server
-				this.server.mapLock.Lock()
-				delete(this.server.OnlineMap, this.Name)	// Without delete, two same users would exist
-				this.server.OnlineMap[newName] = this
-				this.server.mapLock.Unlock()
-				
-				// Update Local Name
-				this.Name = newName
-				this.SendMsg("Your user name is updated:" + this.Name + "\n")
-			}
-		default:
-			// Basic Broadcasting
-			this.server.BroadCast(this, msg)
+		_, exist := this.server.OnlineMap[newName]
+		if exist {
+			this.SendMsg("Rename Failed: Current user name is existed!\n")
+		} else {
+			// Update OnlineMap on Server
+			this.server.mapLock.Lock()
+			delete(this.server.OnlineMap, this.Name)	// Without delete, two same users would exist
+			this.server.OnlineMap[newName] = this
+			this.server.mapLock.Unlock()
+			
+			// Update Local Name
+			this.Name = newName
+			this.SendMsg("Your user name is updated as: " + this.Name + "\n")
+		}
+	case len(msg) > 4 && msg[:4] == "-to|":
+		// Get User Name
+		remoteName := strings.Split(msg, "|")[1]
+		if remoteName == "" {
+			this.SendMsg("Empty Format: please use \"-to|name|msg\".\n")
+			return
+		}
+
+		// Get User server
+		remoteUser, exist := this.server.OnlineMap[remoteName]
+		if !exist {
+			this.SendMsg("User not exist!\n")
+			return
+		}
+
+		// Get msg content
+		context := strings.Split(msg, "|")[2]
+		if context == "" {
+			this.SendMsg("Empty msg, resend!\n")
+			return
+		}
+		
+		// Send privately
+		remoteUser.SendMsg(this.Name + " said: " + context + "\n")
+
+	default:
+		// Basic Broadcasting
+		this.server.BroadCast(this, msg)
 	}
 }
