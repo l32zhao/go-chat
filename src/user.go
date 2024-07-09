@@ -93,7 +93,7 @@ func (this *User) HandleMsg(msg string) {
 			
 			// Update Local Name
 			this.Name = newName
-			this.SendMsg("Your user name is updated as: " + this.Name + "\n")
+			this.SendMsg("Your user name is renamed as: " + this.Name + "\n")
 		}
 	case len(msg) > 4 && msg[:4] == "-to|":
 		// Get User Name

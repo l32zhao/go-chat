@@ -54,7 +54,7 @@ func (this *Server) BroadCast(user *User, msg string) {
 	this.MC <-infodMsg + "\n"
 }
 
-// Handler
+// User specific Handler
 func (this *Server) Handler(conn net.Conn) {
 	// Bussiness Logic... to be connected
 	fmt.Println("Successfully Connected")
